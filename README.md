@@ -1,1 +1,1 @@
-# NeuroAge
+This Python program is designed to predict the age of an individual based on their brain MRI (Magnetic Resonance Imaging) data. It employs machine learning techniques, particularly a Random Forest Regressor, to make these age predictions. The program also includes functions for preprocessing MRI data, feature extraction, model training, and evaluation.

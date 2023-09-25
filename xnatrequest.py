@@ -1,7 +1,7 @@
 import os
 import time
 import requests
-
+from concurrent.futures import ThreadPoolExecutor
 
 class MRIFileHandler:
     """Class to handle MRI file download, storage, and cleanup."""
@@ -10,6 +10,7 @@ class MRIFileHandler:
     RETRIES = 3
     DELAY = 5  # delay in seconds
     CHUNK_SIZE = 8192  # Increased chunk size for faster downloads
+    MAX_WORKERS = 10  # Number of parallel downloads
 
     def __init__(self, auth):
         self.session = requests.Session()
@@ -33,13 +34,16 @@ class MRIFileHandler:
         if os.path.exists(output_path):
             print(f"File {output_path} already exists. Skipping download.")
             return
+        print(f"Downloading: {url}")
         response = self.robust_request(url)
         with open(output_path, 'wb') as out_file:
             for chunk in response.iter_content(chunk_size=self.CHUNK_SIZE):
                 out_file.write(chunk)
+        print(f"Downloaded to: {output_path}")
 
     def cleanup_files(self, directory, valid_extensions):
         """Remove files not matching specific MRI types in directory."""
+        print(f"Cleaning up directory: {directory}")
         for root, _, files in os.walk(directory):
             for file in files:
                 if not file.endswith(valid_extensions):
@@ -60,6 +64,11 @@ class MRIFileHandler:
             return experiments[0]['subject_ID'], experiments[0]['ID']
         return None, None
 
+    def download_files_in_parallel(self, download_list):
+        """Download files in parallel using ThreadPoolExecutor."""
+        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
+            for url, output_path in download_list:
+                executor.submit(self.download_file, url, output_path)
 
 if __name__ == "__main__":
     # CONSTANTS
@@ -74,11 +83,14 @@ if __name__ == "__main__":
     handler = MRIFileHandler(auth=AUTH)
 
     # Initial cleanup
+    print("Starting initial cleanup...")
     handler.cleanup_files("Training", VALID_EXTENSIONS)
     handler.cleanup_files("Testing", VALID_EXTENSIONS)
+    print("Initial cleanup completed.")
 
     # Load MR IDs
-    with open(r"C:\Users\mriga\SynologyDrive\Myalo\Technical\ML Team\Data\Programs\Lists\Sorted_MR_IDs_Ages_Train_Test.txt", "r") as file:
+    print("Loading MR IDs...")
+    with open(r"J:\Lists\Sorted_MR_IDs_Ages_Train_Test.txt", "r") as file:
         lines = file.readlines()
 
     mr_ids = [line.split(',')[0].strip() for line in lines if not line.startswith(("Training Data", "Testing Data", "\n"))]
@@ -92,9 +104,12 @@ if __name__ == "__main__":
             mr_id = values[0].strip()
             age = values[1].strip()
             mr_id_to_info[mr_id] = {"type": data_type, "age": age}
+    print(f"Loaded {len(mr_ids)} MR IDs.")
 
     # Process MR IDs
+    download_list = []
     for mr_id in mr_ids:
+        print(f"Processing MR ID: {mr_id}")
         subject_id, experiment_id = handler.get_subject_experiment_for_mr_id(mr_id)
         if subject_id and experiment_id:
             url = f"{handler.BASE_URL}/projects/OASIS3/subjects/{subject_id}/experiments/{experiment_id}/scans"
@@ -114,5 +129,9 @@ if __name__ == "__main__":
                         if not os.path.exists(age_folder):
                             os.makedirs(age_folder)
                         output_path = os.path.join(age_folder, file_name)
-                        handler.download_file(file_url, output_path)
+                        download_list.append((file_url, output_path))
                 handler.cleanup_files(age_folder, VALID_EXTENSIONS)
+
+    print("Processing completed. Starting parallel downloads...")
+    handler.download_files_in_parallel(download_list)
+    print("All downloads completed.")

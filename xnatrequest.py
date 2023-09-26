@@ -9,15 +9,16 @@ VALID_FILES = [
 ]
 
 class MRIFileHandler:
-    """Class to handle MRI file download, storage, and cleanup."""
+    """Handles MRI file operations including downloading, storage, and cleanup."""
     
     BASE_URL = 'https://central.xnat.org/data'
-    RETRIES = 3
-    DELAY = 5  # delay in seconds
-    CHUNK_SIZE = 8192  # Increased chunk size for faster downloads
+    RETRIES = 3  # Number of retries for failed requests
+    DELAY = 5  # Delay in seconds between retries
+    CHUNK_SIZE = 8192  # Chunk size for downloads
     MAX_WORKERS = 10  # Number of parallel downloads
 
     def __init__(self, auth):
+        """Initialize MRIFileHandler with authentication credentials."""
         self.session = requests.Session()
         self.session.auth = auth
 
@@ -37,7 +38,7 @@ class MRIFileHandler:
                     return None
 
     def download_file(self, url, output_path):
-        """Download file from URL and save to specified path."""
+        """Download a file from a URL and save it to the specified path."""
         if os.path.exists(output_path):
             print(f"File {output_path} already exists. Skipping download.")
             return
@@ -49,7 +50,7 @@ class MRIFileHandler:
             print(f"Downloaded to: {output_path}")
 
     def cleanup_files(self, directory):
-        """Remove files not matching specific MRI types in directory."""
+        """Remove files that don't match specific MRI types from the directory."""
         print(f"Cleaning up directory: {directory}")
         for root, _, files in os.walk(directory):
             for file in files:
@@ -59,7 +60,7 @@ class MRIFileHandler:
                     print(f"Removed: {file_path}")
 
     def get_subject_experiment_for_mr_id(self, mr_id):
-        """Retrieve the subject and experiment ID for a specific MR ID."""
+        """Retrieve subject and experiment ID for a specific MR ID."""
         url = f"{self.BASE_URL}/experiments?xsiType=xnat:imageSessionData&columns=ID,project,subject_ID,label&label={mr_id}"
         response = self.robust_request(url)
         if response:
@@ -84,15 +85,15 @@ if __name__ == "__main__":
 
     handler = MRIFileHandler(auth=AUTH)
 
-    # Initial cleanup
+    # Initial cleanup of files not matching the valid MRI types
     print("Starting initial cleanup...")
     handler.cleanup_files("Training")
     handler.cleanup_files("Testing")
     print("Initial cleanup completed.")
 
-    # Load MR IDs
+    # Load MR IDs from the file
     print("Loading MR IDs...")
-    with open(r"Lists\Sorted_MR_IDs_Ages_Train_Test.txt", "r") as file:
+    with open(r"C:\Users\mriga\SynologyDrive\Myalo\Lists\Sorted_MR_IDs_Ages_Train_Test.txt", "r") as file:
         lines = file.readlines()
 
     data_type = None
@@ -111,7 +112,7 @@ if __name__ == "__main__":
 
     print(f"Loaded {len(mr_id_to_info)} MR IDs.")
 
-    # Process MR IDs
+    # Process each MR ID to extract relevant URLs and save paths
     download_list = []
     for mr_id, info in mr_id_to_info.items():
         print(f"Processing MR ID: {mr_id}")

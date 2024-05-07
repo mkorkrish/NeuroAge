@@ -1,1 +1,1 @@
-•	Built a Random Forest model capable of image preprocessing and feature recognition to analyze user-uploaded MRI scans for risk assessment of neurological disease, trained model on close to 24,000 MRI scans across 2,118 participants.
+

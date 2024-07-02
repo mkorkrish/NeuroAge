@@ -1,4 +1,4 @@
-**Proof of Concept | Not Functional**
+**Development On Hold Due To Computational Resource Limitations**
 
 Myalo, an AI model to empower a deeper understanding of brain health and identify risks without stepping outside. 
 We bridge the gap between technology and well-being, lighting the path to a brighter and healthier future. Unlocking a new era in brain health with AI, enhancing well-being, and early intervention from home.
